@@ -15,7 +15,7 @@
 #include <toolchain.h>
 
 #define STACK_SIZE 2048
-#define NUMBER_OF_LOOPS 2500
+#define NUMBER_OF_LOOPS 1000
 
 extern char thread_stack1[STACK_SIZE];
 extern char thread_stack2[STACK_SIZE];

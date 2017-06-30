@@ -12,6 +12,7 @@
 #include "syskernel.h"
 
 #include <string.h>
+#include <fsl_rtc.h>
 
 K_THREAD_STACK_DEFINE(thread_stack1, STACK_SIZE);
 K_THREAD_STACK_DEFINE(thread_stack2, STACK_SIZE);
@@ -139,6 +140,28 @@ void main(void)
 	int	    continuously = 0;
 	int	    test_result;
 
+	rtc_config_t rtc_cfg;
+
+	RTC_GetDefaultConfig(&rtc_cfg);
+
+	RTC_Init(RTC, &rtc_cfg);
+	RTC->CR |= RTC_CR_OSCE_MASK;
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
+	RTC_StartTimer(RTC);
+
+#if 0
+
+	printk("SIM->SCGC6 %x\n", SIM->SCGC6);
+	SIM->SCGC6 |= 0x20000000;
+	printk("SIM->SCGC6 %x\n", SIM->SCGC6);
+
+	printk("RTC->CR %x\n", RTC->CR);
+
+	RTC_Reset(RTC);
+	RTC_StartTimer(RTC);
+#endif
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
+
 	init_output(&continuously);
 	bench_test_init();
 
@@ -176,4 +199,25 @@ void main(void)
 	} while (continuously && !kbhit());
 
 	output_close();
+
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
+
+	for (int i = 0; i < 10; i++) {
+		printf("counting %d sec\n", i);
+		k_sleep(5*MSEC_PER_SEC);
+	}
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
+
+
+	for (int i = 0; i < 10; i++) {
+		printf("counting %d sec\n", i);
+		k_sleep(5*MSEC_PER_SEC);
+	}
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
+
+	for (int i = 0; i < 60; i++) {
+		k_sleep(MSEC_PER_SEC);
+		printf("counting %d sec\n", i);
+	}
+	printk("RTC->CR %x TSR %x SR %x\n", RTC->CR, RTC->TSR, RTC->SR);
 }

@@ -697,6 +697,7 @@ int _sys_clock_driver_init(struct device *device)
 	/* systick supports 24-bit H/W counter */
 	__ASSERT(sys_clock_hw_cycles_per_tick <= (1 << 24),
 		 "sys_clock_hw_cycles_per_tick too large");
+	printk("TICK set to %d\n", sys_clock_hw_cycles_per_tick);
 	sysTickReloadSet(sys_clock_hw_cycles_per_tick - 1);
 
 #ifdef CONFIG_TICKLESS_IDLE
