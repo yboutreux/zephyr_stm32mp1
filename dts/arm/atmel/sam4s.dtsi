@@ -64,7 +64,7 @@
 		uart1: uart@400E0800 {
 			compatible = "atmel,sam-uart";
 			reg = <0x400E0800 0x200>;
-			interrupts = <9 0>;
+			interrupts = <9 4>;
 			peripheral-id = <9>;
 			status = "disabled";
 			label = "UART_1";
