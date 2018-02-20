@@ -389,18 +389,18 @@ static struct uart_sam_dev_data uart0_sam_data = {
 DEVICE_AND_API_INIT(uart0_sam, CONFIG_UART_SAM_PORT_0_NAME, &uart_sam_init,
 		    &uart0_sam_data, &uart0_sam_config, PRE_KERNEL_1,
 		    CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &uart_sam_driver_api);
-#endif /* CONFIG_UART_SAM_PORT_0 */
 
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 static void uart0_sam_irq_config_func(struct device *port)
 {
-	IRQ_CONNECT(SAM_IRQ_UART0_IRQn,
-		    CONFIG_UART_SAM_IRQ_PRI,
+	IRQ_CONNECT(CONFIG_UART_SAM_PORT_0_IRQ,
+		    CONFIG_UART_SAM_PORT_0_IRQ_PRIO,
 		    uart_sam_isr,
 		    DEVICE_GET(uart0_sam), 0);
-	irq_enable(SAM_IRQ_UART0_IRQn);
+	irq_enable(CONFIG_UART_SAM_PORT_0_IRQ);
 }
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
+#endif /* CONFIG_UART_SAM_PORT_0 */
 
 /* UART1 */
 
@@ -441,11 +441,11 @@ static void uart1_sam_irq_config_func(struct device *port)
 	irq_enable(ATMEL_SAM_UART_400E0800_IRQ_0);
 #endif
 
-	IRQ_CONNECT(SAM_IRQ_UART1_IRQn,
-		    CONFIG_UART_SAM_IRQ_PRI,
+	IRQ_CONNECT(CONFIG_UART_SAM_PORT_1_IRQ,
+		    CONFIG_UART_SAM_PORT_1_IRQ_PRIO,
 		    uart_sam_isr,
 		    DEVICE_GET(uart1_sam), 0);
-	irq_enable(IRQ_UART1_IRQn);
+	irq_enable(CONFIG_UART_SAM_PORT_1_IRQ);
 }
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 
@@ -482,11 +482,11 @@ DEVICE_AND_API_INIT(uart2_sam, CONFIG_UART_SAM_PORT_2_NAME, &uart_sam_init,
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 static void uart2_sam_irq_config_func(struct device *port)
 {
-	IRQ_CONNECT(SAM_IRQ_UART2_IRQn,
-		    CONFIG_UART_SAM_IRQ_PRI,
+	IRQ_CONNECT(CONFIG_UART_SAM_PORT_2_IRQ,
+		    CONFIG_UART_SAM_PORT_2_IRQ_PRIO,
 		    uart_sam_isr,
 		    DEVICE_GET(uart2_sam), 0);
-	irq_enable(SAM_IRQ_UART2_IRQn);
+	irq_enable(CONFIG_UART_SAM_PORT_2_IRQ);
 }
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 
@@ -523,11 +523,11 @@ DEVICE_AND_API_INIT(uart3_sam, CONFIG_UART_SAM_PORT_3_NAME, &uart_sam_init,
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 static void uart3_sam_irq_config_func(struct device *port)
 {
-	IRQ_CONNECT(SAM_IRQ_UART3_IRQn,
-		    CONFIG_UART_SAM_IRQ_PRI,
+	IRQ_CONNECT(CONFIG_UART_SAM_PORT_3_IRQ,
+		    CONFIG_UART_SAM_PORT_3_IRQ_PRIO,
 		    uart_sam_isr,
 		    DEVICE_GET(uart3_sam), 0);
-	irq_enable(SAM_IRQ_UART3_IRQn);
+	irq_enable(CONFIG_UART_SAM_PORT_3_IRQ);
 }
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 
@@ -564,11 +564,11 @@ DEVICE_AND_API_INIT(uart4_sam, CONFIG_UART_SAM_PORT_4_NAME, &uart_sam_init,
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 static void uart4_sam_irq_config_func(struct device *port)
 {
-	IRQ_CONNECT(SAM_IRQ_UART4_IRQn,
-		    CONFIG_UART_SAM_IRQ_PRI,
+	IRQ_CONNECT(CONFIG_UART_SAM_PORT_4_IRQ,
+		    CONFIG_UART_SAM_PORT_4_IRQ_PRIO,
 		    uart_sam_isr,
 		    DEVICE_GET(uart4_sam), 0);
-	irq_enable(SAM_IRQ_UART4_IRQn);
+	irq_enable(CONFIG_UART_SAM_PORT_4_IRQ);
 }
 #endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 
