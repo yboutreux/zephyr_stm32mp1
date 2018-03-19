@@ -19,23 +19,44 @@
 #include <uart.h>
 #include <linker/sections.h>
 
-/* UART registers struct */
-struct uart_cmsdk_apb {
-	/* offset: 0x000 (r/w) data register    */
-	volatile u32_t  data;
-	/* offset: 0x004 (r/w) status register  */
-	volatile u32_t  state;
-	/* offset: 0x008 (r/w) control register */
-	volatile u32_t  ctrl;
-	union {
-		/* offset: 0x00c (r/ ) interrupt status register */
-		volatile u32_t  intstatus;
-		/* offset: 0x00c ( /w) interrupt clear register  */
-		volatile u32_t  intclear;
-	};
-	/* offset: 0x010 (r/w) baudrate divider register */
-	volatile u32_t  bauddiv;
-};
+/* UART Registers */
+#define UART_DR		(0x00)
+#define UART_RSR	(0x04)
+#define UART_ECR	(0x04)
+#define UART_FR		(0x18)
+#define UART_IBRD	(0x24)
+#define UART_FBRD	(0x28)
+#define UART_LCRH	(0x2c)
+#define UART_CR		(0x30)
+#define UART_IMSC	(0x38)
+#define UART_MIS	(0x40)
+#define UART_ICR	(0x44)
+
+/* Flag register */
+#define FR_RXFE		0x10	/* Receive FIFO empty */
+#define FR_TXFF		0x20	/* Transmit FIFO full */
+
+/* Masked interrupt status register */
+#define MIS_RX		0x10	/* Receive interrupt */
+#define MIS_TX		0x20	/* Transmit interrupt */
+
+/* Interrupt clear register */
+#define ICR_RX		0x10	/* Clear receive interrupt */
+#define ICR_TX		0x20	/* Clear transmit interrupt */
+
+/* Line control register (High) */
+#define LCRH_WLEN8	0x60	/* 8 bits */
+#define LCRH_FEN	0x10	/* Enable FIFO */
+
+/* Control register */
+#define CR_UARTEN	0x0001	/* UART enable */
+#define CR_TXE		0x0100	/* Transmit enable */
+#define CR_RXE		0x0200	/* Receive enable */
+
+/* Interrupt mask set/clear register */
+#define IMSC_RX		0x10	/* Receive interrupt mask */
+#define IMSC_TX		0x20	/* Transmit interrupt mask */
+
 
 /* UART Bits */
 /* CTRL Register */
@@ -56,8 +77,7 @@ struct uart_cmsdk_apb_dev_data {
 	((const struct uart_device_config * const)(dev)->config->config_info)
 #define DEV_DATA(dev) \
 	((struct uart_cmsdk_apb_dev_data * const)(dev)->driver_data)
-#define UART_STRUCT(dev) \
-	((volatile struct uart_cmsdk_apb *)(DEV_CFG(dev))->base)
+#define UART_STRUCT(dev) ((DEV_CFG(dev))->regs)
 
 static const struct uart_driver_api uart_cmsdk_apb_driver_api;
 
@@ -72,18 +92,22 @@ static const struct uart_driver_api uart_cmsdk_apb_driver_api;
  */
 static void baudrate_set(struct device *dev)
 {
-	volatile struct uart_cmsdk_apb *uart = UART_STRUCT(dev);
+	u32_t base = UART_STRUCT(dev);
+	u32_t divider, remainder, fraction;
 	const struct uart_device_config * const dev_cfg = DEV_CFG(dev);
 	struct uart_cmsdk_apb_dev_data *const dev_data = DEV_DATA(dev);
+
 	/*
-	 * If baudrate and/or sys_clk_freq are 0 the configuration remains
-	 * unchanged. It can be useful in case that Zephyr it is run via
-	 * a bootloader that brings up the serial and sets the baudrate.
+	 * Set baud rate:
+	 * IBRD = UART_CLK / (16 * BAUD_RATE)
+	 * FBRD = ROUND((64 * MOD(UART_CLK,(16 * BAUD_RATE))) / (16 * BAUD_RATE))
 	 */
-	if ((dev_data->baud_rate != 0) && (dev_cfg->sys_clk_freq != 0)) {
-		/* calculate baud rate divisor */
-		uart->bauddiv = (dev_cfg->sys_clk_freq / dev_data->baud_rate);
-	}
+	divider = dev_cfg->sys_clk_freq / (16 * dev_data->baud_rate);
+	remainder = dev_cfg->sys_clk_freq % (16 * dev_data->baud_rate);
+	fraction = (8 * remainder / dev_data->baud_rate) >> 1;
+	fraction += (8 * remainder / dev_data->baud_rate) & 1;
+	sys_write32(divider, base + UART_IBRD);
+	sys_write32(fraction, base + UART_FBRD);
 }
 
 /**
@@ -98,21 +122,19 @@ static void baudrate_set(struct device *dev)
  */
 static int uart_cmsdk_apb_init(struct device *dev)
 {
-	volatile struct uart_cmsdk_apb *uart = UART_STRUCT(dev);
+	u32_t base = UART_STRUCT(dev);
 
-#ifdef CONFIG_CLOCK_CONTROL
-	/* Enable clock for subsystem */
-	struct device *clk =
-		device_get_binding(CONFIG_ARM_CLOCK_CONTROL_DEV_NAME);
-
-	struct uart_cmsdk_apb_dev_data * const data = DEV_DATA(dev);
-#endif /* CONFIG_CLOCK_CONTROL */
+	sys_write32(0, base + UART_CR);	/* Disable everything */
+	sys_write32(0x07ff, base + UART_ICR);	/* Clear all interrupt status */
 
 	/* Set baud rate */
 	baudrate_set(dev);
 
-	/* Enable receiver and transmitter */
-	uart->ctrl = UART_RX_EN | UART_TX_EN;
+	/* Set N, 8, 1, FIFO enable */
+	sys_write32((LCRH_WLEN8 | LCRH_FEN), base + UART_LCRH);
+
+	/* Enable UART */
+	sys_write32((CR_RXE | CR_TXE | CR_UARTEN), base + UART_CR);
 
 	return 0;
 }
@@ -128,15 +150,12 @@ static int uart_cmsdk_apb_init(struct device *dev)
 
 static int uart_cmsdk_apb_poll_in(struct device *dev, unsigned char *c)
 {
-	volatile struct uart_cmsdk_apb *uart = UART_STRUCT(dev);
+	u32_t base = UART_STRUCT(dev);
 
-	/* If the receiver is not ready returns -1 */
-	if (!(uart->state & UART_RX_BF)) {
-		return -1;
+	while (sys_read32(base + UART_FR) & FR_RXFE) {
+		;
 	}
-
-	/* got a character */
-	*c = (unsigned char)uart->data;
+	*c = sys_read32(base + UART_DR) & 0xff;
 
 	return 0;
 }
@@ -155,15 +174,13 @@ static int uart_cmsdk_apb_poll_in(struct device *dev, unsigned char *c)
 static unsigned char uart_cmsdk_apb_poll_out(struct device *dev,
 					     unsigned char c)
 {
-	volatile struct uart_cmsdk_apb *uart = UART_STRUCT(dev);
+	u32_t base = UART_STRUCT(dev);
 
-	/* Wait for transmitter to be ready */
-	while (uart->state & UART_TX_BF) {
-		; /* Wait */
+	while (sys_read32(base + UART_FR) & FR_TXFF) {
+		; /* wait */
 	}
+	sys_write32((uint32_t)c, base + UART_DR);
 
-	/* Send a character */
-	uart->data = (u32_t)c;
 	return c;
 }
 
