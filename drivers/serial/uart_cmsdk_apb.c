@@ -20,17 +20,17 @@
 #include <linker/sections.h>
 
 /* UART Registers */
-#define UART_DR		(0x00)
-#define UART_RSR	(0x04)
-#define UART_ECR	(0x04)
-#define UART_FR		(0x18)
-#define UART_IBRD	(0x24)
-#define UART_FBRD	(0x28)
-#define UART_LCRH	(0x2c)
-#define UART_CR		(0x30)
-#define UART_IMSC	(0x38)
-#define UART_MIS	(0x40)
-#define UART_ICR	(0x44)
+#define UART_DR		(0x00+0x50102000)
+#define UART_RSR	(0x04+0x50102000)
+#define UART_ECR	(0x04+0x50102000)
+#define UART_FR		(0x18+0x50102000)
+#define UART_IBRD	(0x24+0x50102000)
+#define UART_FBRD	(0x28+0x50102000)
+#define UART_LCRH	(0x2c+0x50102000)
+#define UART_CR		(0x30+0x50102000)
+#define UART_IMSC	(0x38+0x50102000)
+#define UART_MIS	(0x40+0x50102000)
+#define UART_ICR	(0x44+0x50102000)
 
 /* Flag register */
 #define FR_RXFE		0x10	/* Receive FIFO empty */
@@ -106,8 +106,8 @@ static void baudrate_set(struct device *dev)
 	remainder = dev_cfg->sys_clk_freq % (16 * dev_data->baud_rate);
 	fraction = (8 * remainder / dev_data->baud_rate) >> 1;
 	fraction += (8 * remainder / dev_data->baud_rate) & 1;
-	sys_write32(divider, base + UART_IBRD);
-	sys_write32(fraction, base + UART_FBRD);
+	sys_write32(divider, UART_IBRD);
+	sys_write32(fraction, UART_FBRD);
 }
 
 /**
@@ -124,17 +124,17 @@ static int uart_cmsdk_apb_init(struct device *dev)
 {
 	u32_t base = UART_STRUCT(dev);
 
-	sys_write32(0, base + UART_CR);	/* Disable everything */
-	sys_write32(0x07ff, base + UART_ICR);	/* Clear all interrupt status */
+	sys_write32(0, UART_CR);	/* Disable everything */
+	sys_write32(0x07ff, UART_ICR);	/* Clear all interrupt status */
 
 	/* Set baud rate */
 	baudrate_set(dev);
 
 	/* Set N, 8, 1, FIFO enable */
-	sys_write32((LCRH_WLEN8 | LCRH_FEN), base + UART_LCRH);
+	sys_write32((LCRH_WLEN8 | LCRH_FEN), UART_LCRH);
 
 	/* Enable UART */
-	sys_write32((CR_RXE | CR_TXE | CR_UARTEN), base + UART_CR);
+	sys_write32((CR_RXE | CR_TXE | CR_UARTEN), UART_CR);
 
 	return 0;
 }
@@ -152,10 +152,10 @@ static int uart_cmsdk_apb_poll_in(struct device *dev, unsigned char *c)
 {
 	u32_t base = UART_STRUCT(dev);
 
-	while (sys_read32(base + UART_FR) & FR_RXFE) {
+	while (sys_read32(UART_FR) & FR_RXFE) {
 		;
 	}
-	*c = sys_read32(base + UART_DR) & 0xff;
+	*c = sys_read32(UART_DR) & 0xff;
 
 	return 0;
 }
@@ -176,10 +176,10 @@ static unsigned char uart_cmsdk_apb_poll_out(struct device *dev,
 {
 	u32_t base = UART_STRUCT(dev);
 
-	while (sys_read32(base + UART_FR) & FR_TXFF) {
+	while (sys_read32(UART_FR) & FR_TXFF) {
 		; /* wait */
 	}
-	sys_write32((uint32_t)c, base + UART_DR);
+	sys_write32((uint32_t)c, UART_DR);
 
 	return c;
 }
