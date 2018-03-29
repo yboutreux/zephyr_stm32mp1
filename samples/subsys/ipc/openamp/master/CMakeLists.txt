@@ -15,6 +15,7 @@ target_include_directories(app PRIVATE $ENV{ZEPHYR_BASE}/samples/subsys/ipc/open
 target_sources(app PRIVATE src/main_master.c ${PLATFORM_DIR}/platform.c ${PLATFORM_DIR}/platform_ops.c ${PLATFORM_DIR}/resource_table.c)
 if(CONFIG_SOC_SERIES_LPC54XXX)
 	target_sources(app PRIVATE $ENV{ZEPHYR_BASE}/ext/hal/nxp/mcux/devices/LPC54114/incbin.S)
+	target_compile_options(app PRIVATE -Wa,-I$ENV{ZEPHYR_BASE}/samples/subsys/ipc/openamp/remote/build/zephyr)
 endif()
 
 include($ENV{ZEPHYR_BASE}/cmake/open-amp.cmake)
