@@ -17,7 +17,7 @@
 #include "platform.h"
 #include "resource_table.h"
 
-#define APP_TASK_STACK_SIZE (256)
+#define APP_TASK_STACK_SIZE (512)
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
 
