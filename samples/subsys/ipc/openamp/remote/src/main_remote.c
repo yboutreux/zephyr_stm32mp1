@@ -72,7 +72,7 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	struct metal_init_params metal_params = METAL_INIT_DEFAULTS;
 	metal_init(&metal_params);
 
-	proc = platform_init(RPMSG_MASTER);
+	proc = platform_init(RPMSG_REMOTE);
 	if (proc == NULL) {
 		goto _cleanup;
 	}
