@@ -4,7 +4,7 @@ ExternalProject_Add(
   libmetal                 # Name for custom target
   SOURCE_DIR $ENV{ZEPHYR_BASE}/../libmetal/
   INSTALL_COMMAND ""      # This particular build system has no install command
-  CMAKE_ARGS -DWITH_ZEPHYR=ON -DBOARD=${BOARD}
+  CMAKE_ARGS -DWITH_ZEPHYR=ON -DBOARD=${BOARD} -DWITH_DEFAULT_LOGGER=OFF
   )
 
 ExternalProject_Get_property(libmetal BINARY_DIR)
