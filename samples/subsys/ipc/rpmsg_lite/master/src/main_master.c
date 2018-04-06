@@ -14,7 +14,7 @@
 #include "rpmsg_queue.h"
 #include "rpmsg_ns.h"
 
-#define APP_TASK_STACK_SIZE (256)
+#define APP_TASK_STACK_SIZE (512)
 #define REMOTE_EPT_ADDR (30)
 #define LOCAL_EPT_ADDR  (40)
 
