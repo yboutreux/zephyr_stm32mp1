@@ -50,6 +50,7 @@ static struct metal_device shm_device = {
 #define VRING_ALIGNMENT         4
 #define VRING_SIZE              32
 
+#define RSC_TABLE_ADDRESS       0x04000000
 
 
 #if 0
@@ -65,7 +66,6 @@ static volatile unsigned int received_data;
 static struct rsc_table_info rsc_info;
 
 
-#define RSC_TABLE_ADDRESS       0x04000000
 
 OPENAMP_PACKED_BEGIN
 struct lpc_resource_table {
@@ -189,8 +189,16 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg3);
 	int status = 0;
 	struct metal_device *device;
+	unsigned int *p = (void *)RSC_TABLE_ADDRESS;
 
 	printk("\r\nOpenAMP demo started\r\n");
+
+
+	/* Make sure resource table is setup by slave - HACK */
+	while (*p != 1) {
+		;
+	}
+	printk("%p %x %x\n", p, *p, *(p+1));
 
 	struct metal_init_params metal_params = METAL_INIT_DEFAULTS;
 	metal_init(&metal_params);
