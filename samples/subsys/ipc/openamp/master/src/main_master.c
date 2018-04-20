@@ -6,6 +6,7 @@
  */
 
 #include <zephyr.h>
+#include <ipm.h>
 #include <misc/printk.h>
 #include <device.h>
 #include <stdio.h>
@@ -15,9 +16,11 @@
 #include <openamp/open_amp.h>
 #include <metal/device.h>
 
-#define APP_TASK_STACK_SIZE (512)
+#define APP_TASK_STACK_SIZE (2048)
 K_THREAD_STACK_DEFINE(thread_stack, APP_TASK_STACK_SIZE);
 static struct k_thread thread_data;
+
+static struct device *ipm_handle = NULL;
 
 #define SHM_START_ADDRESS       0x04000400
 #define SHM_SIZE                0x7c00
@@ -156,7 +159,7 @@ static struct virtqueue vq[2];
 
 static unsigned char virtio_get_status(struct virtio_device *vdev)
 {
-	return 0;
+	return VIRTIO_CONFIG_STATUS_DRIVER_OK;
 }
 
 static void virtio_set_status(struct virtio_device *vdev, unsigned char status)
@@ -166,7 +169,8 @@ static void virtio_set_status(struct virtio_device *vdev, unsigned char status)
 
 static uint32_t virtio_get_features(struct virtio_device *vdev)
 {
-	return 0;
+	printk("in virtio_get_features\n");
+	return 1 << VIRTIO_RPMSG_F_NS;
 }
 
 static void virtio_set_features(struct virtio_device *vdev,
@@ -175,12 +179,43 @@ static void virtio_set_features(struct virtio_device *vdev,
 	return ;
 }
 
+static void virtio_notify(struct virtqueue *vq)
+{
+	uint32_t dummy_data = 0x12345678; /* Some data must be provided */
+	printk("virtio_notify for vq %p\n", vq);
+
+	printk(" NAME %s\n", vq->vq_name);
+
+	ipm_send(ipm_handle, 0, 0, &dummy_data, sizeof(dummy_data));
+}
+
 virtio_dispatch dispatch = {
 	.get_status = virtio_get_status,
 	.set_status = virtio_set_status,
 	.get_features = virtio_get_features,
 	.set_features = virtio_set_features,
+	.notify = virtio_notify,
 };
+
+static void platform_ipm_callback(void *context, u32_t id, volatile void *data)
+{
+	printk("platform_ipm_callback\n");
+	virtqueue_notification(&vq[0]);
+	virtqueue_notification(&vq[1]);
+}
+
+#if 0
+static int enable_interrupt(struct proc_intr *intr)
+{
+	return ipm_set_enabled(ipm_handle, 1);
+}
+#endif
+
+void endpoint_cb(struct rpmsg_endpoint *ept, void *data,
+                             size_t len, uint32_t src, void *priv)
+{
+	printk("in endpoint_cb\n");
+}
 
 void app_task(void *arg1, void *arg2, void *arg3)
 {
@@ -189,10 +224,10 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ARG_UNUSED(arg3);
 	int status = 0;
 	struct metal_device *device;
+	struct rpmsg_endpoint *ep;
 	unsigned int *p = (void *)RSC_TABLE_ADDRESS;
 
 	printk("\r\nOpenAMP demo started\r\n");
-
 
 	/* Make sure resource table is setup by slave - HACK */
 	while (*p != 1) {
@@ -224,6 +259,13 @@ void app_task(void *arg1, void *arg2, void *arg3)
 
 	printk("set io %p\n", io);
 
+	/* setup IPM */
+	ipm_handle = device_get_binding("MAILBOX_0");
+
+	ipm_register_callback(ipm_handle, platform_ipm_callback, NULL);
+
+	ipm_set_enabled(ipm_handle, 1);
+
 	/* setup vdev */
 	vdev.role = RPMSG_MASTER;
 	vdev.vrings_num = VRING_COUNT;
@@ -246,8 +288,16 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	rvdev.vdev = &vdev;
 
 	rpmsg_init_vdev(&rvdev, &vdev, io, (void *)SHM_START_ADDRESS, SHM_SIZE);
-
 	printk("rpmsg_init_vdev DONE\n");
+
+	ep = rpmsg_create_ept(&rvdev, "kumar", 3, 4, &endpoint_cb, NULL);
+
+	printk("created ep %p\n", ep);
+
+	int data = 0xdeadbeef;
+	status = rpmsg_send(ep, &data, sizeof(data));
+
+	printk("sent data status %d\n", status);
 
 	metal_finish();
 
