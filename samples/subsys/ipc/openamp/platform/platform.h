@@ -14,10 +14,10 @@
 #define SHM_DEVICE_NAME         "sramx.shm"
 
 #define VRING_COUNT             2
-#define VRING_RX_ADDRESS        0x04000400
-#define VRING_TX_ADDRESS        0x04000800
+#define VRING_RX_ADDRESS        0x04007800
+#define VRING_TX_ADDRESS        0x04007C00
 #define VRING_ALIGNMENT         4
-#define VRING_SIZE              32
+#define VRING_SIZE              16
 
 struct hil_proc *platform_init(int role);
 
