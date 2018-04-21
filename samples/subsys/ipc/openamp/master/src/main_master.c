@@ -48,10 +48,10 @@ static struct metal_device shm_device = {
 };
 
 #define VRING_COUNT             2
-#define VRING_RX_ADDRESS        0x04000400
-#define VRING_TX_ADDRESS        0x04000800
+#define VRING_RX_ADDRESS        0x04007800
+#define VRING_TX_ADDRESS        0x04007C00
 #define VRING_ALIGNMENT         4
-#define VRING_SIZE              32
+#define VRING_SIZE              16
 
 #define RSC_TABLE_ADDRESS       0x04000000
 
