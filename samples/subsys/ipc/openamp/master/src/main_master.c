@@ -155,7 +155,7 @@ static struct virtio_vring_info rvrings[2] = {
 static struct virtio_device vdev;
 static struct rpmsg_virtio_device rvdev;
 static struct metal_io_region *io;
-static struct virtqueue vq[2];
+static struct virtqueue * vq[2];
 
 static unsigned char virtio_get_status(struct virtio_device *vdev)
 {
@@ -200,8 +200,8 @@ virtio_dispatch dispatch = {
 static void platform_ipm_callback(void *context, u32_t id, volatile void *data)
 {
 	printk("platform_ipm_callback\n");
-	virtqueue_notification(&vq[0]);
-	virtqueue_notification(&vq[1]);
+	virtqueue_notification(vq[0]);
+	virtqueue_notification(vq[1]);
 }
 
 #if 0
@@ -267,6 +267,9 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	ipm_set_enabled(ipm_handle, 1);
 
 	/* setup vdev */
+	vq[0] = virtqueue_allocate(VRING_SIZE, true);
+	vq[1] = virtqueue_allocate(VRING_SIZE, true);
+
 	vdev.role = RPMSG_MASTER;
 	vdev.vrings_num = VRING_COUNT;
 	vdev.func = &dispatch;
@@ -274,13 +277,13 @@ void app_task(void *arg1, void *arg2, void *arg3)
 	rvrings[0].va = (void *)VRING_TX_ADDRESS;
 	rvrings[0].num_descs = VRING_SIZE;
 	rvrings[0].align = VRING_ALIGNMENT;
-	rvrings[0].vq = &vq[0];
+	rvrings[0].vq = vq[0];
 
 	rvrings[1].io = io;
 	rvrings[1].va = (void *)VRING_RX_ADDRESS;
 	rvrings[1].num_descs = VRING_SIZE;
 	rvrings[1].align = VRING_ALIGNMENT;
-	rvrings[1].vq = &vq[1];
+	rvrings[1].vq = vq[1];
 
 	vdev.vrings_info = &rvrings[0];
 
