@@ -66,3 +66,10 @@ Patch List:
       ext/hal/st/stm32cube/stm32mp1xx/soc/stm32mp157axx_cm4.h
       ext/hal/st/stm32cube/stm32mp1xx/soc/stm32mp157cxx_cm4.h
     ST Bug tracker ID: TO BE DONE
+
+    * Add SPI LL drivers
+    Add SPI LL drivers to cube.
+    Impacted files:
+      ext/hal/st/stm32cube/stm32mp1xx/drivers/include/stm32mp1xx_ll_spi.h
+      ext/hal/st/stm32cube/stm32mp1xx/drivers/src/stm32mp1xx_ll_spi.c
+    ST Bug tracker ID: TO BE DONE
