@@ -310,13 +310,12 @@ static void bt_spi_rx_thread(void)
 
 	while (true) {
 		k_sem_take(&sem_request, K_FOREVER);
-		/* Disable IRQ pin callback to avoid spurious IRQs */
-		gpio_pin_disable_callback(irq_dev, GPIO_IRQ_PIN);
-		k_sem_take(&sem_busy, K_FOREVER);
-
-		BT_DBG("");
-
 		do {
+			/* Disable IRQ pin callback to avoid spurious IRQs */
+			gpio_pin_disable_callback(irq_dev, GPIO_IRQ_PIN);
+			k_sem_take(&sem_busy, K_FOREVER);
+
+			BT_DBG("");
 			init_irq_high_loop();
 			do {
 				kick_cs();
@@ -440,9 +439,6 @@ static int bt_spi_send(struct net_buf *buf)
 	} while ((rxmsg[STATUS_HEADER_READY] != READY_NOW ||
 		  (rxmsg[1] | rxmsg[2] | rxmsg[3] | rxmsg[4]) == 0U) && !ret);
 
-
-	k_sem_give(&sem_busy);
-
 	if (!ret) {
 		/* Transmit the message */
 		do {
@@ -452,6 +448,7 @@ static int bt_spi_send(struct net_buf *buf)
 	}
 
 	release_cs();
+	k_sem_give(&sem_busy);
 
 	if (ret) {
 		BT_ERR("Error %d", ret);
