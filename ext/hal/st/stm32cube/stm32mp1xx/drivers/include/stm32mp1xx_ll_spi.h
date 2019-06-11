@@ -2425,7 +2425,12 @@ __STATIC_INLINE uint32_t LL_SPI_ReceiveData32(SPI_TypeDef *SPIx)
   */
 __STATIC_INLINE void LL_SPI_TransmitData8(SPI_TypeDef *SPIx, uint8_t TxData)
 {
+#if defined (__GNUC__)
+  __IO uint8_t *spitxdr = ((__IO uint8_t *)&SPIx->TXDR);
+  *spitxdr = TxData;
+#else
   *((__IO uint8_t *)&SPIx->TXDR) = TxData;
+#endif
 }
 
 /**

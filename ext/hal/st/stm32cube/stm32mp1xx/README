@@ -73,3 +73,10 @@ Patch List:
       ext/hal/st/stm32cube/stm32mp1xx/drivers/include/stm32mp1xx_ll_spi.h
       ext/hal/st/stm32cube/stm32mp1xx/drivers/src/stm32mp1xx_ll_spi.c
     ST Bug tracker ID: TO BE DONE
+
+    * Update LL_SPI_TransmitData8 definition
+    Update LL_SPI_TransmitData8 definition in order to avoid [-Wstrict-aliasing]
+    warning during Zephyr project build.
+    Impacted files:
+      ext/hal/st/stm32cube/stm32mp1xx/drivers/include/stm32mp1xx_ll_spi.h
+    ST Bug tracker ID: TO BE DONE
