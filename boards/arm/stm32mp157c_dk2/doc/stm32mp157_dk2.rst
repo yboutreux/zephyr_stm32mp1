@@ -175,6 +175,8 @@ features:
 +-----------+------------+-------------------------------------+
 | PINMUX    | on-chip    | pinmux                              |
 +-----------+------------+-------------------------------------+
+| SPI       | on-chip    | spi                                 |
++-----------+------------+-------------------------------------+
 
 The default configuration can be found in the defconfig file:
 ``boards/arm/stm32mp157c_dk2/stm32mp157c_dk2_defconfig``
@@ -186,12 +188,12 @@ Connections and IOs
 STM32MP157C-DK2 Discovery Board schematic is available here:
 `STM32MP157C Discovery board schematics`_.
 
-
 Default Zephyr Peripheral Mapping:
 ----------------------------------
 
 - USART_3 TX/RX : PB10/PB12 (UART console)
 - UART_7 TX/RX : PE8/PE7 (Arduino Serial)
+- SPI4 SCK/MISO/MOSI : PE12/PE13/PE14 (Arduino SPI)
 
 System Clock
 ------------
