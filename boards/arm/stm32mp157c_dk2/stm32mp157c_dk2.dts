@@ -6,6 +6,7 @@
 
 /dts-v1/;
 #include <st/mp1/stm32mp157.dtsi>
+#include "arduino_r3_connector.dtsi"
 
 / {
 	model = "STMicroelectronics STM32MP157-DK2 board";
