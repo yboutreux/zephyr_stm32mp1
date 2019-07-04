@@ -20,6 +20,17 @@ LOG_MODULE_REGISTER(spi_ll_stm32);
 
 #include "spi_ll_stm32.h"
 
+/* Size of the SPI buffer */
+#define WORD_8_BITS	8
+#define WORD_16_BITS	16
+
+/* Size (in bytes) of a chunk */
+#define CHUNK_1_BYTE	1
+#define CHUNK_2_BYTES	2
+
+/* Number of chunk to handle */
+#define CHUNK_SIZE	1
+
 #define DEV_CFG(dev)						\
 (const struct spi_stm32_config * const)(dev->config->config_info)
 
@@ -82,7 +93,8 @@ static inline u16_t spi_stm32_next_tx(struct spi_stm32_data *data)
 	u16_t tx_frame = SPI_STM32_TX_NOP;
 
 	if (spi_context_tx_buf_on(&data->ctx)) {
-		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) ==
+		    WORD_8_BITS) {
 			tx_frame = UNALIGNED_GET((u8_t *)(data->ctx.tx_buf));
 		} else {
 			tx_frame = UNALIGNED_GET((u16_t *)(data->ctx.tx_buf));
@@ -119,14 +131,14 @@ static void spi_stm32_shift_m(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	}
 #endif /* CONFIG_SOC_SERIES_STM32MP1X */
 
-	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == WORD_8_BITS) {
 		LL_SPI_TransmitData8(spi, tx_frame);
 		/* The update is ignored if TX is off. */
-		spi_context_update_tx(&data->ctx, 1, 1);
+		spi_context_update_tx(&data->ctx, CHUNK_1_BYTE, CHUNK_SIZE);
 	} else {
 		LL_SPI_TransmitData16(spi, tx_frame);
 		/* The update is ignored if TX is off. */
-		spi_context_update_tx(&data->ctx, 2, 1);
+		spi_context_update_tx(&data->ctx, CHUNK_2_BYTES, CHUNK_SIZE);
 	}
 
 #ifdef CONFIG_SOC_SERIES_STM32MP1X
@@ -142,18 +154,18 @@ static void spi_stm32_shift_m(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	}
 #endif /* CONFIG_SOC_SERIES_STM32MP1X */
 
-	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == WORD_8_BITS) {
 		rx_frame = LL_SPI_ReceiveData8(spi);
 		if (spi_context_rx_buf_on(&data->ctx)) {
 			UNALIGNED_PUT(rx_frame, (u8_t *)data->ctx.rx_buf);
 		}
-		spi_context_update_rx(&data->ctx, 1, 1);
+		spi_context_update_rx(&data->ctx, CHUNK_1_BYTE, CHUNK_SIZE);
 	} else {
 		rx_frame = LL_SPI_ReceiveData16(spi);
 		if (spi_context_rx_buf_on(&data->ctx)) {
 			UNALIGNED_PUT(rx_frame, (u16_t *)data->ctx.rx_buf);
 		}
-		spi_context_update_rx(&data->ctx, 2, 1);
+		spi_context_update_rx(&data->ctx, CHUNK_2_BYTES, CHUNK_SIZE);
 	}
 }
 
@@ -164,12 +176,15 @@ static void spi_stm32_shift_s(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	if (LL_SPI_IsActiveFlag_TXP(spi) && spi_context_tx_on(&data->ctx)) {
 		u16_t tx_frame = spi_stm32_next_tx(data);
 
-		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) ==
+		    WORD_8_BITS) {
 			LL_SPI_TransmitData8(spi, tx_frame);
-			spi_context_update_tx(&data->ctx, 1, 1);
+			spi_context_update_tx(&data->ctx, CHUNK_1_BYTE,
+					      CHUNK_SIZE);
 		} else {
 			LL_SPI_TransmitData16(spi, tx_frame);
-			spi_context_update_tx(&data->ctx, 2, 1);
+			spi_context_update_tx(&data->ctx, CHUNK_2_BYTES,
+					      CHUNK_SIZE);
 		}
 	} else {
 		LL_SPI_DisableIT_TXP(spi);
@@ -179,26 +194,32 @@ static void spi_stm32_shift_s(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	    spi_context_rx_buf_on(&data->ctx)) {
 		u16_t rx_frame;
 
-		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) ==
+		    WORD_8_BITS) {
 			rx_frame = LL_SPI_ReceiveData8(spi);
 			UNALIGNED_PUT(rx_frame, (u8_t *)data->ctx.rx_buf);
-			spi_context_update_rx(&data->ctx, 1, 1);
+			spi_context_update_rx(&data->ctx, CHUNK_1_BYTE,
+					      CHUNK_SIZE);
 		} else {
 			rx_frame = LL_SPI_ReceiveData16(spi);
 			UNALIGNED_PUT(rx_frame, (u16_t *)data->ctx.rx_buf);
-			spi_context_update_rx(&data->ctx, 2, 1);
+			spi_context_update_rx(&data->ctx, CHUNK_2_BYTES,
+					      CHUNK_SIZE);
 		}
 	}
 #else /* not CONFIG_SOC_SERIES_STM32MP1X */
 	if (LL_SPI_IsActiveFlag_TXE(spi) && spi_context_tx_on(&data->ctx)) {
 		u16_t tx_frame = spi_stm32_next_tx(data);
 
-		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) ==
+		    WORD_8_BITS) {
 			LL_SPI_TransmitData8(spi, tx_frame);
-			spi_context_update_tx(&data->ctx, 1, 1);
+			spi_context_update_tx(&data->ctx, CHUNK_1_BYTE,
+					      CHUNK_SIZE);
 		} else {
 			LL_SPI_TransmitData16(spi, tx_frame);
-			spi_context_update_tx(&data->ctx, 2, 1);
+			spi_context_update_tx(&data->ctx, CHUNK_2_BYTES,
+					      CHUNK_SIZE);
 		}
 	} else {
 		LL_SPI_DisableIT_TXE(spi);
@@ -208,14 +229,17 @@ static void spi_stm32_shift_s(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	    spi_context_rx_buf_on(&data->ctx)) {
 		u16_t rx_frame;
 
-		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) ==
+		    WORD_8_BITS) {
 			rx_frame = LL_SPI_ReceiveData8(spi);
 			UNALIGNED_PUT(rx_frame, (u8_t *)data->ctx.rx_buf);
-			spi_context_update_rx(&data->ctx, 1, 1);
+			spi_context_update_rx(&data->ctx, CHUNK_1_BYTE,
+					      CHUNK_SIZE);
 		} else {
 			rx_frame = LL_SPI_ReceiveData16(spi);
 			UNALIGNED_PUT(rx_frame, (u16_t *)data->ctx.rx_buf);
-			spi_context_update_rx(&data->ctx, 2, 1);
+			spi_context_update_rx(&data->ctx, CHUNK_2_BYTES,
+					      CHUNK_SIZE);
 		}
 	}
 #endif /* CONFIC_SOC_SERIES_STM32MP1 */
@@ -348,8 +372,8 @@ static int spi_stm32_configure(struct device *dev,
 		return 0;
 	}
 
-	if ((SPI_WORD_SIZE_GET(config->operation) != 8)
-	    && (SPI_WORD_SIZE_GET(config->operation) != 16)) {
+	if ((SPI_WORD_SIZE_GET(config->operation) != WORD_8_BITS)
+	    && (SPI_WORD_SIZE_GET(config->operation) != WORD_16_BITS)) {
 		return -ENOTSUP;
 	}
 
@@ -413,7 +437,7 @@ static int spi_stm32_configure(struct device *dev,
 		LL_SPI_SetMode(spi, LL_SPI_MODE_MASTER);
 	}
 
-	if (SPI_WORD_SIZE_GET(config->operation) ==  8) {
+	if (SPI_WORD_SIZE_GET(config->operation) ==  WORD_8_BITS) {
 		LL_SPI_SetDataWidth(spi, LL_SPI_DATAWIDTH_8BIT);
 	} else {
 		LL_SPI_SetDataWidth(spi, LL_SPI_DATAWIDTH_16BIT);
