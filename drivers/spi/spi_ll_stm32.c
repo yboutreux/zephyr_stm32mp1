@@ -61,7 +61,19 @@ static int spi_stm32_get_err(SPI_TypeDef *spi)
 		if (LL_SPI_IsActiveFlag_OVR(spi)) {
 			LL_SPI_ClearFlag_OVR(spi);
 		}
-
+		if (LL_SPI_IsActiveFlag_MODF(spi)) {
+			LL_SPI_ClearFlag_MODF(spi);
+		}
+#if defined (LL_SPI_SR_UDR) || defined(SPI_SR_FRE)
+		if (LL_SPI_IsActiveFlag_FRE(spi)) {
+			LL_SPI_ClearFlag_FRE(spi);
+		}
+#ifdef LL_SPI_SR_UDR
+		if (LL_SPI_IsActiveFlag_UDR(spi)) {
+			LL_SPI_ClearFlag_UDR(spi);
+		}
+#endif /* LL_SPI_SR_UDR */
+#endif /* LL_SPI_SR_UDR || SPI_SR_FRE */
 		return -EIO;
 	}
 
